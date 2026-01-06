@@ -5,12 +5,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fishbone Diagram Builder (Offline)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#2f855a" />
 </head>
 <body>
   <header>
     <h1>Fishbone Diagram Builder</h1>
     <div class="actions">
+      <button id="themeToggleBtn" title="Toggle Light/Dark">Light → Dark</button>
+      <select id="headSideSelect" title="Fish head side">
+        <option value="right">Head: Right</option>
+        <option value="left">Head: Left</option>
+      </select>
       <button id="exportPngBtn">Export PNG</button>
       <button id="exportJsonBtn">Export JSON</button>
       <label class="import">
@@ -22,7 +29,7 @@
   </header>
 
   <main>
-    <!-- Left: form controls -->
+    <!-- Left: controls -->
     <section class="panel">
       <h2>Define Problem</h2>
       <input id="problemInput" type="text" placeholder="e.g., High defect rate" />
@@ -44,7 +51,7 @@
       <div id="structure"></div>
     </section>
 
-    <!-- Right: diagram canvas (SVG) -->
+    <!-- Right: diagram -->
     <section class="diagram">
       <svg id="fishSvg" viewBox="0 0 1200 700" width="100%" height="100%"></svg>
     </section>
@@ -54,9 +61,9 @@
     <small>Tip: Alternate categories (top/bottom) for readability. Use Export JSON to save your work.</small>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
   <script>
-    // Optional: register service worker for offline caching
+    // Optional offline caching
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(console.warn);
     }
