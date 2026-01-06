@@ -1,11 +1,23 @@
 
 :root{
-  --bg:#0f172a;        /* slate-900 (dark UI) */
-  --panel:#111827;     /* darker panel */
-  --accent:#22c55e;    /* green */
-  --text:#e5e7eb;      /* light text */
+  /* Light theme defaults */
+  --bg:#f7fafc;          /* page background */
+  --panel:#ffffff;       /* left panel */
+  --accent:#2f855a;      /* primary button */
+  --text:#1a202c;        /* main text (dark) */
+  --muted:#4a5568;       /* muted text */
+  --border:#e2e8f0;      /* borders */
+  --canvas:#ffffff;      /* SVG background (light) */
+}
+
+body.dark{
+  --bg:#0f172a;          /* dark slate */
+  --panel:#111827;
+  --accent:#22c55e;
+  --text:#e5e7eb;
   --muted:#9ca3af;
   --border:#1f2937;
+  --canvas:#0b1220;      /* SVG background (dark) */
 }
 
 *{ box-sizing:border-box }
@@ -24,10 +36,14 @@ header{
 header h1{ margin:0; font-size:20px }
 header .actions{ display:flex; gap:10px; align-items:center }
 button{
-  background:var(--accent); color:#000; border:none; padding:8px 12px;
+  background:var(--accent); color:#fff; border:none; padding:8px 12px;
   border-radius:6px; cursor:pointer; font-weight:600;
 }
-button:hover{ filter:brightness(1.1) }
+button:hover{ filter:brightness(1.05) }
+select{
+  padding:8px; border-radius:6px; border:1px solid var(--border);
+  background:#fff; color:#1a202c;
+}
 label.import{
   background:transparent; border:1px dashed var(--muted);
   padding:6px 10px; border-radius:6px; cursor:pointer; color:var(--muted);
@@ -46,27 +62,31 @@ main{
 .panel .row{ display:flex; gap:8px; align-items:center }
 .panel input, .panel select{
   width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);
-  background:#0b1220; color:var(--text);
+  background:#fff; color:#1a202c;
 }
 #structure{ margin-top:8px; font-size:14px; color:var(--muted) }
 #structure .cat{ margin-bottom:8px }
 #structure .cat b{ color:var(--text) }
-#structure .cause{ display:inline-block; background:#0b1220; padding:2px 6px; border-radius:4px; margin:2px }
+#structure .cause{ display:inline-block; background:#edf2f7; color:#2d3748; padding:2px 6px; border-radius:4px; margin:2px }
 
 .diagram{
   position:relative; overflow:auto; padding:8px;
 }
 svg{
-  background:#0b1220; border:1px solid var(--border); border-radius:10px;
-  box-shadow: 0 0 0 1px #000 inset;
+  background:var(--canvas); border:1px solid var(--border); border-radius:10px;
 }
 text{ fill:var(--text); font-size:14px; font-family:inherit }
 line, polyline{
-  stroke: var(--text); stroke-width:2;
+  stroke: var(--text);
+  stroke-width: 2;
 }
-path{ stroke:var(--text); stroke-width:2; fill:none }
+rect {
+  stroke-width: 0; /* head box drawn with fill only in JS */
+}
 footer{
   position:fixed; bottom:0; left:0; right:0;
-  padding:8px 20px; color:var(--muted); background:rgba(0,0,0,0.3);
-  backdrop-filter:saturate(180%) blur(4px);
+  padding:8px 20px; color:var(--muted);
+  background:rgba(0,0,0,0.05);
 }
+``
+
