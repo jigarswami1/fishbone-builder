@@ -1,0 +1,10 @@
+
+{
+  "name": "Fishbone Diagram Builder",
+  "short_name": "Fishbone",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#22c55e",
+  "icons": []
+}
