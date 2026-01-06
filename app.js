@@ -329,3 +329,108 @@ function renderDiagram(){
   }
 
   /* --- SVG helpers --- */
+  function addLine(x1,y1,x2,y2){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","line");
+    el.setAttribute("x1", x1); el.setAttribute("y1", y1);
+    el.setAttribute("x2", x2); el.setAttribute("y2", y2);
+    svg.appendChild(el);
+  }
+  function addPolyline(points){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+    el.setAttribute("points", points.map(p => p.join(",")).join(" "));
+    svg.appendChild(el);
+  }
+  function addRect(x,y,w,h){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    el.setAttribute("x", x); el.setAttribute("y", y);
+    el.setAttribute("width", w); el.setAttribute("height", h);
+    el.setAttribute("rx", 8); el.setAttribute("ry", 8);
+    // readable head box for both themes
+    el.style.fill = "rgba(0,0,0,0.75)";
+    el.style.stroke = "none";
+    svg.appendChild(el);
+  }
+  function addText(x,y,text,{anchor="middle",fontSize=14,weight=400}={}){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","text");
+    el.setAttribute("x", x); el.setAttribute("y", y);
+    el.setAttribute("text-anchor", anchor);
+    el.style.fontSize = `${fontSize}px`;
+    el.style.fontWeight = weight;
+    el.textContent = text;
+    svg.appendChild(el);
+  }
+  function addWrappedText(x,y,str,{anchor="start",fontSize=13,lineHeight=16,maxCharsPerLine=14}={}){
+    const el = document.createElementNS("http://www.w3.org/2000/svg","text");
+    el.setAttribute("x", x); el.setAttribute("y", y);
+    el.setAttribute("text-anchor", anchor);
+    el.style.fontSize = `${fontSize}px`;
+    el.style.fontWeight = 400;
+
+    const lines = wrapByWords(str, maxCharsPerLine);
+    lines.forEach((ln, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
+      tspan.setAttribute("x", x);
+      tspan.setAttribute("dy", idx === 0 ? 0 : lineHeight);
+      tspan.textContent = ln;
+      el.appendChild(tspan);
+    });
+    svg.appendChild(el);
+  }
+  function wrapByWords(text, maxLen){
+    const words = (text || "").split(/\s+/);
+    const lines = [];
+    let cur = "";
+    words.forEach(w => {
+      if ((cur + " " + w).trim().length > maxLen) {
+        if (cur) lines.push(cur);
+        cur = w;
+      } else {
+        cur = (cur ? cur + " " : "") + w;
+      }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+}
+
+/* ---------- Export PNG (white background) ---------- */
+async function exportSvgToPng(){
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svg);
+  const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = () => {
+    const width  = svg.viewBox.baseVal.width  || 1200;
+    const height = svg.viewBox.baseVal.height || 700;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    // Always export on white for readability
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw SVG over white
+    ctx.drawImage(img, 0, 0);
+
+    // Export to PNG
+    canvas.toBlob((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "fishbone.png";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+  img.onerror = () => {
+    alert("PNG export failed.");
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+``
