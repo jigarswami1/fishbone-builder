@@ -1,0 +1,72 @@
+
+:root{
+  --bg:#0f172a;        /* slate-900 (dark UI) */
+  --panel:#111827;     /* darker panel */
+  --accent:#22c55e;    /* green */
+  --text:#e5e7eb;      /* light text */
+  --muted:#9ca3af;
+  --border:#1f2937;
+}
+
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+header h1{ margin:0; font-size:20px }
+header .actions{ display:flex; gap:10px; align-items:center }
+button{
+  background:var(--accent); color:#000; border:none; padding:8px 12px;
+  border-radius:6px; cursor:pointer; font-weight:600;
+}
+button:hover{ filter:brightness(1.1) }
+label.import{
+  background:transparent; border:1px dashed var(--muted);
+  padding:6px 10px; border-radius:6px; cursor:pointer; color:var(--muted);
+}
+label.import input{ display:none }
+
+main{
+  display:grid; grid-template-columns: 380px 1fr; height: calc(100vh - 76px);
+}
+
+.panel{
+  padding:16px; border-right:1px solid var(--border);
+  overflow:auto; background:var(--panel);
+}
+.panel h2{ margin:20px 0 8px; font-size:16px }
+.panel .row{ display:flex; gap:8px; align-items:center }
+.panel input, .panel select{
+  width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);
+  background:#0b1220; color:var(--text);
+}
+#structure{ margin-top:8px; font-size:14px; color:var(--muted) }
+#structure .cat{ margin-bottom:8px }
+#structure .cat b{ color:var(--text) }
+#structure .cause{ display:inline-block; background:#0b1220; padding:2px 6px; border-radius:4px; margin:2px }
+
+.diagram{
+  position:relative; overflow:auto; padding:8px;
+}
+svg{
+  background:#0b1220; border:1px solid var(--border); border-radius:10px;
+  box-shadow: 0 0 0 1px #000 inset;
+}
+text{ fill:var(--text); font-size:14px; font-family:inherit }
+line, polyline{
+  stroke: var(--text); stroke-width:2;
+}
+path{ stroke:var(--text); stroke-width:2; fill:none }
+footer{
+  position:fixed; bottom:0; left:0; right:0;
+  padding:8px 20px; color:var(--muted); background:rgba(0,0,0,0.3);
+  backdrop-filter:saturate(180%) blur(4px);
+}
