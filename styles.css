@@ -67,7 +67,8 @@ main{
 #structure{ margin-top:8px; font-size:14px; color:var(--muted) }
 #structure .cat{ margin-bottom:8px }
 #structure .cat b{ color:var(--text) }
-#structure .cause{ display:inline-block; background:#edf2f7; color:#2d3748; padding:2px 6px; border-radius:4px; margin:2px }
+#structure .cause{ display:inline-block; background:#edf2f7; color:#2d3748;
+  padding:2px 6px; border-radius:4px; margin:2px }
 
 .diagram{
   position:relative; overflow:auto; padding:8px;
@@ -88,5 +89,4 @@ footer{
   padding:8px 20px; color:var(--muted);
   background:rgba(0,0,0,0.05);
 }
-``
 
