@@ -156,31 +156,6 @@ function initHeadSide(){
   headSideSelect.value = headSide;
 }
 
-/* ---------- UI helpers ---------- */
-function renderCategorySelect() {
-  categorySelect.innerHTML = "";
-  state.categories.forEach((c, i) => {
-    const opt = document.createElement("option");
-    opt.value = i; opt.textContent = c.name;
-    categorySelect.appendChild(opt);
-  });
-}
-function renderStructure() {
-  structureDiv.innerHTML = "";
-  state.categories.forEach((c) => {
-    const wrap = document.createElement("div");
-    wrap.className = "cat";
-    wrap.innerHTML = `<b>${c.name}:</b> ${c.causes.length ? "" : "<span class='cause'>Add causes</span>"}`;
-    c.causes.forEach(cs => {
-      const chip = document.createElement("span");
-      chip.className = "cause";
-      chip.textContent = cs;
-      wrap.appendChild(chip);
-    });
-    structureDiv.appendChild(wrap);
-  });
-}
-
 /* ---------- Diagram Rendering (SVG) ---------- */
 function renderDiagram(){
   // Clear SVG
@@ -213,10 +188,16 @@ function renderDiagram(){
     [spineStartX + tailOffset, spineY]
   ]);
 
-  // Layout categories alternating top/bottom
+  // Determine density to spread categories wider if needed
+  const maxCauses = Math.max(...state.categories.map(c => (c.causes || []).length, 0), 0);
+  const baseStep  = 160;
+  const densityBoost = Math.min(120, maxCauses * 10); // widen spacing if dense
   const usableSpine = Math.abs(spineEndX - spineStartX) - headW - 40;
-  const step = Math.max(160, usableSpine / Math.max(1, state.categories.length));
+  const step = Math.max(baseStep + densityBoost, usableSpine / Math.max(1, state.categories.length));
   let xStart = (headSide === 'right') ? (spineStartX + 100) : (spineEndX - usableSpine + 100);
+
+  // Collision registry of placed label boxes {left,top,right,bottom}
+  const placedBoxes = [];
 
   state.categories.forEach((cat, i) => {
     const top = i % 2 === 0;
@@ -225,8 +206,9 @@ function renderDiagram(){
       : Math.max(xStart + i*step, spineEndX + headW + 60);
     const baseY = spineY;
 
-    // Bone geometry
-    const boneLen = 220;
+    // Bone geometry: longer with more causes
+    const mCauses = (cat.causes || []).length;
+    const boneLen = Math.min(320, 180 + mCauses * 24);
     const dy = top ? -130 : 130;
     const tipX = baseX + (headSide === 'right' ? boneLen : -boneLen);
     const tipY = baseY + dy;
@@ -241,12 +223,11 @@ function renderDiagram(){
       weight: 600
     });
 
-    // --- Causes: perpendicular ticks + fanned labels ---
+    // Causes perpendicular ticks + non-overlapping labels
     const causes = cat.causes || [];
     const m = Math.max(causes.length, 1);
-    const tickLen = 52;                 // length of perpendicular tick
-    const labelOffset = 10;             // gap from tick end to label start
-    const stackGap = 14;                // extra outward offset per cause (fans labels away)
+    const tickLen = 54;
+    const labelOffset = 10;
     const alongStep = boneLen / (m + 1);
 
     // Unit along-bone vector (tip - base)
@@ -275,128 +256,76 @@ function renderDiagram(){
       const tx2 = px + nx * half, ty2 = py + ny * half;
       addLine(tx1, ty1, tx2, ty2);
 
-      // Fan the label away from the bone by labelOffset + j*stackGap
-      const fan = labelOffset + j * stackGap;
-      let lx = tx2 + nx * fan;
-      let ly = ty2 + ny * fan;
+      // Initial fan distance
+      let fan = labelOffset + j * 16; // base outward offset
+      const anchor = (headSide === 'right') ? "start" : "end";
 
-      // Clamp to viewport with a margin
-      lx = Math.max(margin, Math.min(W - margin, lx));
-      ly = Math.max(margin, Math.min(H - margin, ly));
+      // Compute non-overlapping position by pushing the label outward until it doesn't collide
+      const wrapCfg = { anchor, fontSize: labelFont, maxCharsPerLine: 14, lineHeight: 16 };
+      let placed = false, attempts = 0;
+      let lx, ly, bbox;
 
-      // Wrap long labels to multiple lines
-      addWrappedText(lx, ly, cause, {
-        anchor: headSide === 'right' ? "start" : "end",
-        fontSize: labelFont,
-        maxCharsPerLine: 14,
-        lineHeight: 16
-      });
+      while (!placed && attempts < 40) {
+        lx = tx2 + nx * fan;
+        ly = ty2 + ny * fan;
+
+        // Clamp to viewport margins
+        lx = Math.max(margin, Math.min(W - margin, lx));
+        ly = Math.max(margin, Math.min(H - margin, ly));
+
+        // Estimate label box for collision check
+        bbox = estimateLabelBox(lx, ly, cause, wrapCfg);
+        if (!collides(bbox, placedBoxes)) {
+          placed = true;
+          placedBoxes.push(bbox);
+        } else {
+          // Push further out; if still colliding, also nudge along the bone
+          fan += 14;
+          if (attempts % 3 === 2) {
+            // small along-bone shift left/right
+            const shift = (attempts % 2 === 0) ? 10 : -10;
+            lx += vx * shift;
+            ly += vy * shift;
+          }
+        }
+        attempts++;
+      }
+
+      // Finally render wrapped text at the found position
+      addWrappedText(lx, ly, cause, wrapCfg);
     });
   });
 
-  /* --- SVG helpers --- */
-  function addLine(x1,y1,x2,y2){
-    const el = document.createElementNS("http://www.w3.org/2000/svg","line");
-    el.setAttribute("x1", x1); el.setAttribute("y1", y1);
-    el.setAttribute("x2", x2); el.setAttribute("y2", y2);
-    svg.appendChild(el);
-  }
-  function addPolyline(points){
-    const el = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-    el.setAttribute("points", points.map(p => p.join(",")).join(" "));
-    svg.appendChild(el);
-  }
-  function addRect(x,y,w,h){
-    const el = document.createElementNS("http://www.w3.org/2000/svg","rect");
-    el.setAttribute("x", x); el.setAttribute("y", y);
-    el.setAttribute("width", w); el.setAttribute("height", h);
-    el.setAttribute("rx", 8); el.setAttribute("ry", 8);
-    // readable head box for both themes
-    el.style.fill = "rgba(0,0,0,0.75)";
-    el.style.stroke = "none";
-    svg.appendChild(el);
-  }
-  function addText(x,y,text,{anchor="middle",fontSize=14,weight=400}={}){
-    const el = document.createElementNS("http://www.w3.org/2000/svg","text");
-    el.setAttribute("x", x); el.setAttribute("y", y);
-    el.setAttribute("text-anchor", anchor);
-    el.style.fontSize = `${fontSize}px`;
-    el.style.fontWeight = weight;
-    el.textContent = text;
-    svg.appendChild(el);
-  }
-  function addWrappedText(x,y,str,{anchor="start",fontSize=13,lineHeight=16,maxCharsPerLine=14}={}){
-    const el = document.createElementNS("http://www.w3.org/2000/svg","text");
-    el.setAttribute("x", x); el.setAttribute("y", y);
-    el.setAttribute("text-anchor", anchor);
-    el.style.fontSize = `${fontSize}px`;
-    el.style.fontWeight = 400;
-
+  /* --- Collision helpers --- */
+  function estimateLabelBox(x, y, str, {anchor="start",fontSize=13,lineHeight=16,maxCharsPerLine=14}={}){
     const lines = wrapByWords(str, maxCharsPerLine);
-    lines.forEach((ln, idx) => {
-      const tspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
-      tspan.setAttribute("x", x);
-      tspan.setAttribute("dy", idx === 0 ? 0 : lineHeight);
-      tspan.textContent = ln;
-      el.appendChild(tspan);
-    });
-    svg.appendChild(el);
+    const longest = Math.max(...lines.map(s => s.length), 0);
+    const approxCharW = fontSize * 0.6;               // rough text width per char
+    const width = Math.max(60, longest * approxCharW);
+    const height = Math.max(lineHeight, lines.length * lineHeight);
+
+    // y is baseline of first line; approximate to box top
+    const top = y - fontSize * 0.9;
+    const bottom = top + height;
+    let left, right;
+    if (anchor === "start") {
+      left = x;
+      right = x + width;
+    } else { // "end"
+      left = x - width;
+      right = x;
+    }
+    // Clamp within viewport
+    left = Math.max(10, left); right = Math.min(1190, right);
+    return { left, top, right, bottom };
   }
-  function wrapByWords(text, maxLen){
-    const words = (text || "").split(/\s+/);
-    const lines = [];
-    let cur = "";
-    words.forEach(w => {
-      if ((cur + " " + w).trim().length > maxLen) {
-        if (cur) lines.push(cur);
-        cur = w;
-      } else {
-        cur = (cur ? cur + " " : "") + w;
-      }
-    });
-    if (cur) lines.push(cur);
-    return lines;
+
+  function collides(b, boxes){
+    for (const a of boxes) {
+      const overlap = !(b.right < a.left || b.left > a.right || b.bottom < a.top || b.top > a.bottom);
+      if (overlap) return true;
+    }
+    return false;
   }
-}
 
-/* ---------- Export PNG (white background) ---------- */
-async function exportSvgToPng(){
-  const serializer = new XMLSerializer();
-  const svgStr = serializer.serializeToString(svg);
-  const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
-
-  const img = new Image();
-  img.onload = () => {
-    const width  = svg.viewBox.baseVal.width  || 1200;
-    const height = svg.viewBox.baseVal.height || 700;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-
-    // Always export on white for readability
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw SVG over white
-    ctx.drawImage(img, 0, 0);
-
-    // Export to PNG
-    canvas.toBlob((blob) => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "fishbone.png";
-      a.click();
-      URL.revokeObjectURL(a.href);
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
-  img.onerror = () => {
-    alert("PNG export failed.");
-    URL.revokeObjectURL(url);
-  };
-  img.src = url;
-}
-``
+  /* --- SVG helpers --- */
